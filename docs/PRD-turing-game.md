@@ -45,8 +45,8 @@ Turing tests are conceptually compelling but have no lightweight, shareable, bro
 3. On accept, Supabase Realtime subscription is established for the game's message channel.
 4. Game row status updates to `ready`. P1's waiting screen detects this update and transitions to the game screen.
 
-### 3.3 Phase 2 — Active Game (2 minutes 30 seconds)
-- Countdown timer begins **simultaneously** for P1 and P2 the moment status becomes `ready`.
+### 3.3 Phase 2 — Active Game (4 minutes)
+- Countdown timer (4 minutes) begins **simultaneously** for P1 and P2 the moment status becomes `ready`.
 - **P1 screen:** Two identical side-by-side chat panels labeled "Witness A" and "Witness B" (no other identifying information). Left/right assignment is randomized per game. Both inputs are always active.
 - **P2 screen:** Single chat panel. P2 sees messages from P1 only and responds normally.
 - **Claude:** Receives P1 messages via `/api/claude-message`. Each call includes full conversation history + injected system prompt (persona + skill files). Streams response back. Response is saved to Supabase and displayed in P1's corresponding chat panel.
