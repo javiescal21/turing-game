@@ -34,6 +34,7 @@ export function JoinClient({
   const [startedAt, setStartedAt] = useState<string | null>(initialStartedAt);
   const [messages, setMessages] = useState<Message[]>([]);
   const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   // Result state
   const [guessCorrect, setGuessCorrect] = useState<boolean | null>(null);
@@ -123,6 +124,7 @@ export function JoinClient({
 
   const handleJoin = useCallback(async () => {
     setJoining(true);
+    setJoinError(null);
     const now = new Date().toISOString();
     const { error } = await supabase
       .from("games")
@@ -131,6 +133,7 @@ export function JoinClient({
 
     if (error) {
       setJoining(false);
+      setJoinError("Failed to join. The game may no longer be available.");
       return;
     }
     setStartedAt(now);
@@ -181,13 +184,18 @@ export function JoinClient({
             doesn&apos;t know which one is you. Just be yourself.
           </div>
 
-          <button
-            onClick={handleJoin}
-            disabled={joining}
-            className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white font-medium rounded-xl text-lg transition-colors cursor-pointer disabled:cursor-wait"
-          >
-            {joining ? "Joining..." : "Accept & Join"}
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={handleJoin}
+              disabled={joining}
+              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white font-medium rounded-xl text-lg transition-colors cursor-pointer disabled:cursor-wait"
+            >
+              {joining ? "Joining..." : "Accept & Join"}
+            </button>
+            {joinError && (
+              <p className="text-red-400 text-sm">{joinError}</p>
+            )}
+          </div>
         </div>
       </main>
     );
@@ -267,6 +275,7 @@ export function JoinClient({
           label="Chat with the Interrogator"
           currentSender="p2"
           disabled={isChatDisabled}
+          emptyHint="Waiting for the interrogator to say something..."
         />
       </div>
     </main>

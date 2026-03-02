@@ -10,6 +10,7 @@ interface ChatPanelProps {
   disabled?: boolean;
   label: string;
   currentSender: Sender;
+  emptyHint?: string;
 }
 
 export function ChatPanel({
@@ -19,6 +20,7 @@ export function ChatPanel({
   disabled = false,
   label,
   currentSender,
+  emptyHint,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export function ChatPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         {messages.length === 0 && !hasStreaming && (
           <p className="text-center text-[#555] text-sm pt-8">
-            No messages yet
+            {emptyHint || "No messages yet"}
           </p>
         )}
         {messages.map((msg) => {

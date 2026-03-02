@@ -224,26 +224,47 @@ export function GameClient({ gameId }: { gameId: string }) {
 
   const handleGuessTimerExpire = useCallback(async () => {
     setSubmittingGuess(true);
-    await fetch("/api/end-game", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gameId, timeout: true }),
-    });
+    try {
+      const res = await fetch("/api/end-game", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameId, timeout: true }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setSubmittingGuess(false);
+    }
   }, [gameId]);
 
   const handleSubmitGuess = useCallback(async () => {
     if (!guessLeft || !guessRight || submittingGuess) return;
     setSubmittingGuess(true);
-    await fetch("/api/end-game", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gameId, guessLeft, guessRight }),
-    });
+    try {
+      const res = await fetch("/api/end-game", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameId, guessLeft, guessRight }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setSubmittingGuess(false);
+    }
   }, [gameId, guessLeft, guessRight, submittingGuess]);
 
-  const copyInviteUrl = useCallback(() => {
+  const copyInviteUrl = useCallback(async () => {
     const url = `${window.location.origin}/join/${gameId}`;
-    navigator.clipboard.writeText(url);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [gameId]);
@@ -327,7 +348,10 @@ export function GameClient({ gameId }: { gameId: string }) {
     <main className="h-screen flex flex-col">
       {/* ── Header with timer ── */}
       <header className="shrink-0 px-6 py-3 border-b border-[#2a2a2a] flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Turing Game</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold">Turing Game</h1>
+          <span className="text-xs text-[#555] bg-[#1e1e1e] px-2 py-0.5 rounded">Interrogator</span>
+        </div>
 
         {isActive && startedAt && (
           <CountdownTimer
@@ -363,8 +387,8 @@ export function GameClient({ gameId }: { gameId: string }) {
       )}
 
       {/* ── Chat panels ── */}
-      <div className="flex-1 flex gap-4 p-4 min-h-0">
-        <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 min-h-0 overflow-y-auto lg:overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 min-h-[300px] lg:min-h-0">
           <ChatPanel
             messages={leftMessages}
             streamingContent={
@@ -374,6 +398,7 @@ export function GameClient({ gameId }: { gameId: string }) {
             label="Witness A"
             currentSender="p1"
             disabled={chatDisabled || streamingSlot === "left"}
+            emptyHint="Say something to Witness A..."
           />
           <GuessDropdown
             value={guessLeft}
@@ -381,7 +406,7 @@ export function GameClient({ gameId }: { gameId: string }) {
             disabled={isEnded || submittingGuess}
           />
         </div>
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-[300px] lg:min-h-0">
           <ChatPanel
             messages={rightMessages}
             streamingContent={
@@ -391,6 +416,7 @@ export function GameClient({ gameId }: { gameId: string }) {
             label="Witness B"
             currentSender="p1"
             disabled={chatDisabled || streamingSlot === "right"}
+            emptyHint="Say something to Witness B..."
           />
           <GuessDropdown
             value={guessRight}

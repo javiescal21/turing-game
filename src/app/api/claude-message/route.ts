@@ -31,6 +31,13 @@ export async function POST(req: Request) {
 
   // ── Claude's slot — generate response ──
 
+  // Compulsory human-like "reading + typing" delay (3-10s, proportional to message length)
+  const charFactor = Math.min(content.length / 150, 1);
+  const minDelay = 3000 + charFactor * 3000; // 3s (short msg) → 6s (long msg)
+  const maxDelay = 5000 + charFactor * 5000; // 5s (short msg) → 10s (long msg)
+  const delayMs = minDelay + Math.random() * (maxDelay - minDelay);
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+
   // Generate persona on first invocation
   let persona = game.claude_persona;
   if (!persona) {
