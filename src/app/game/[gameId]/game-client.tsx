@@ -269,6 +269,17 @@ export function GameClient({ gameId }: { gameId: string }) {
     setTimeout(() => setCopied(false), 2000);
   }, [gameId]);
 
+  // ── Auto-select opposite guess (only 2 options) ────────────
+  const handleGuessLeftChange = useCallback((value: Guess) => {
+    setGuessLeft(value);
+    setGuessRight(value === "human" ? "ai" : "human");
+  }, []);
+
+  const handleGuessRightChange = useCallback((value: Guess) => {
+    setGuessRight(value);
+    setGuessLeft(value === "human" ? "ai" : "human");
+  }, []);
+
   // ── Derived state ─────────────────────────────────────────────
 
   const leftMessages = messages.filter((m) => m.slot === "left");
@@ -402,7 +413,7 @@ export function GameClient({ gameId }: { gameId: string }) {
           />
           <GuessDropdown
             value={guessLeft}
-            onChange={setGuessLeft}
+            onChange={handleGuessLeftChange}
             disabled={isEnded || submittingGuess}
           />
         </div>
@@ -420,7 +431,7 @@ export function GameClient({ gameId }: { gameId: string }) {
           />
           <GuessDropdown
             value={guessRight}
-            onChange={setGuessRight}
+            onChange={handleGuessRightChange}
             disabled={isEnded || submittingGuess}
           />
         </div>

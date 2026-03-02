@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   // Stream Claude's response
   const result = streamText({
-    model: anthropic("claude-haiku-4-5"), // TODO: swap to claude-sonnet-4-6 for final testing
+    model: anthropic("claude-sonnet-4-6"),
     system: systemPrompt,
     messages: conversationMessages,
     onFinish: async ({ text }) => {

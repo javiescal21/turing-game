@@ -69,7 +69,7 @@ export async function generateReflection(
     : "GAME OVER: The interrogator thought you were human. You fooled them!";
 
   const { text } = await generateText({
-    model: anthropic("claude-haiku-4-5"), // TODO: swap to claude-sonnet-4-6 for final testing
+    model: anthropic("claude-sonnet-4-6"),
     system: `${reflectionSkill}\n\nYour persona:\n${JSON.stringify(persona, null, 2)}`,
     messages: [
       ...conversationMessages,
@@ -84,7 +84,7 @@ export async function generateReflection(
 
 export async function generatePersona(): Promise<Record<string, unknown>> {
   const { text } = await generateText({
-    model: anthropic("claude-haiku-4-5"), // TODO: swap to claude-sonnet-4-6 for final testing
+    model: anthropic("claude-sonnet-4-6"),
     system: `You are a persona generator for a Turing test game played by ITAM (Instituto Tecnológico Autónomo de México) students in Mexico City. Generate a believable ITAM student persona. Respond with ONLY a JSON object, no other text. The persona should feel like a real, specific ITAM student — not a generic template.`,
     prompt: `Generate a JSON object with these fields:
 - "name": a common Mexican first name
