@@ -26,7 +26,7 @@ Single Next.js 14 app (App Router). Deployed on Vercel free tier. Real-time stat
 
 **Install the Vercel CLI:**
 ```bash
-npm install -g vercel
+pnpm add -g vercel
 ```
 Verify:
 ```bash
@@ -110,19 +110,19 @@ src/
 
 > `agent-skills/` lives inside `src/` so it's bundled with the server-side code. These files are never exposed to the browser.
 
-### 0.4 Supabase Setup
+### 0.4 Supabase Setup - skipped for Phase 1 - migration from here into supa
 
-1. Go to [supabase.com](https://supabase.com) and create a free account.
-2. Create a new project — name it `turing-game`, choose the region closest to your Vercel deployment region (US East or EU West).
-3. Wait ~2 minutes for provisioning.
-4. Go to **Table Editor** and create the two tables from the schema in the PRD (`games` and `messages`). Alternatively, go to **SQL Editor** and run the migration SQL (you'll write this in Phase 1).
+1. Go to [supabase.com](https://supabase.com) and create a free account. done - preexisiting
+2. Create a new project — name it `turing-game`, choose the region closest to your Vercel deployment region (US East or EU West). DONE
+3. Wait ~2 minutes for provisioning. 
+4. Go to **Table Editor** and create the two tables from the schema in the PRD (`games` and `messages`). Alternatively, go to **SQL Editor** and run the migration SQL (you'll write this in Phase 1). SKIPPED, will run migration from local repo in phase 1
 5. Go to **Project Settings → API**. Copy:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public key` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role key` → `SUPABASE_SERVICE_ROLE_KEY` (server-side only, never expose to browser)
+   - `service_role key` → `SUPABASE_SERVICE_ROLE_KEY` (server-side only, never expose to browser) and then what?
 6. Enable **Realtime** for the `messages` table: go to **Database → Replication** and toggle `messages` on.
 
-### 0.5 Environment Variables
+### 0.5 Environment Variables [DONE] with skipped var
 
 **Local (`.env.local`)** — create this file at the repo root, add to `.gitignore` immediately:
 ```env
@@ -135,18 +135,18 @@ ANTHROPIC_API_KEY=sk-ant-...
 **Vercel (production + previews):**
 In the Vercel dashboard → your project → **Settings → Environment Variables**, add all four. Set them for **Production**, **Preview**, and **Development** environments.
 
-Alternatively via CLI:
+Alternatively via CLI: SKIPPED FOR NOW bc vercel sdk ai api no configed yet
 ```bash
 vercel env add ANTHROPIC_API_KEY
 # Follow prompts, paste value, select all environments
 ```
 
-### 0.6 Install Dependencies
+### 0.6 Install Dependencies [DONE]
 
 ```bash
-npm install @supabase/supabase-js @supabase/ssr
-npm install ai @ai-sdk/anthropic
-npm install nanoid
+pnpm add @supabase/supabase-js @supabase/ssr
+pnpm add ai @ai-sdk/anthropic
+pnpm add nanoid
 ```
 
 | Package | Purpose |
@@ -168,7 +168,7 @@ git push
 
 **Local development:**
 ```bash
-npm run dev
+pnpm dev
 # App runs at http://localhost:3000
 ```
 Use two browser windows (or Chrome + Firefox) to simulate P1 and P2 simultaneously. Supabase Realtime works from localhost — no tunnel or special setup needed.
@@ -208,7 +208,7 @@ Merging to `main` deploys to your production URL. For MVP, `main` is your produc
 ## Phase 3 — Claude Agent Integration
 > **Detail level: MEDIUM.**
 
-- Write all four skill MD files in `src/agent-skills/`.
+- ~~Write all four skill MD files in `src/agent-skills/`.~~ **BLOCKED** — teammate is authoring and testing all four skill MD files. Paste them in when received. Do not implement or overwrite these files in the meantime.
 - Write `src/lib/claude.ts`: assembles system prompt from skill files (use `fs.readFileSync` — runs server-side only), fetches conversation history from Supabase, calls Claude via Vercel AI SDK `streamText`.
 - Write `src/app/api/claude-message/route.ts` as an **Edge Runtime** route:
 ```typescript
@@ -247,7 +247,7 @@ export const runtime = 'edge'
 
 - [ ] All four env vars set in Vercel for Production environment
 - [ ] Supabase Realtime enabled on `messages` table
-- [ ] RLS policies allow anonymous game access by `game_id`
+- [ ] SKIP: RLS policies allow anonymous game access by `game_id` (NO RLS for now)
 - [ ] Edge runtime declared on `claude-message` route
 - [ ] Skill MD files committed and readable server-side
 - [ ] Tested full game flow end-to-end on production URL (not localhost)
