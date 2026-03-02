@@ -1,5 +1,8 @@
 import { createServerSupabaseClient } from "./supabase";
 
+export const GAME_DURATION_SECONDS = 240; // 4 minutes
+export const GUESS_DURATION_SECONDS = 120; // 2 minutes
+
 // ── Types ────────────────────────────────────────────────────
 
 export type GameStatus = "waiting" | "ready" | "active" | "guessing" | "ended";

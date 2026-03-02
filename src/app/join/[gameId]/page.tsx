@@ -33,6 +33,7 @@ export default async function JoinPage({
       gameId={gameId}
       p2Slot={p2Slot}
       initialStatus={game.status}
+      initialStartedAt={game.started_at ?? null}
     />
   );
 }
