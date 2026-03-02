@@ -67,7 +67,14 @@ git push origin main
 ```
 6. Go to [vercel.com/new](https://vercel.com/new), click **"Import Git Repository"**, select `turing-game`. Vercel auto-detects Next.js. Click **Deploy**. First deploy will succeed with the placeholder homepage.
 
-From this point forward, every push to `main` triggers a production deploy. Every pull request gets its own **preview URL** automatically — this is Vercel's killer feature for testing.
+From this point forward, every push to `main` triggers a production deploy. Every pull request gets its own **preview URL** automatically — this is Vercel's killer feature for testing. 
+
+### 0.2 RESULTS
+DONE - ready
+**VERCEL PROJECT NAME**: turing-game-v1
+- Deployment
+  - turing-game-v1-g45cviryp-javiescal21s-projects.vercel.app
+
 
 > **Do not use Turborepo.** It is a monorepo tool for multiple packages. This project is a single app. Adding Turborepo here creates overhead with no benefit.
 
