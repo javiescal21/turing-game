@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { Slot, Guess } from "@/lib/game";
 
 interface ResultOverlayProps {
+  gameId: string;
   claudeSlot: Slot;
   guessCorrect: boolean | null;
   guessLeft: Guess | null;
@@ -11,6 +13,7 @@ interface ResultOverlayProps {
 }
 
 export function ResultOverlay({
+  gameId,
   claudeSlot,
   guessCorrect,
   guessLeft,
@@ -18,10 +21,16 @@ export function ResultOverlay({
 }: ResultOverlayProps) {
   const isTimeout = !guessLeft && !guessRight;
   const humanSlot: Slot = claudeSlot === "left" ? "right" : "left";
+  const [feedback, setFeedback] = useState("");
+  const [feedbackState, setFeedbackState] = useState<
+    "idle" | "sending" | "sent" | "skipped"
+  >("idle");
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl shadow-black/50 space-y-5 text-center">
+    <>
+    <div className="fixed inset-0 z-40 bg-black/60" />
+    <div className="fixed inset-0 z-50 overflow-y-auto pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 px-4 flex justify-center items-start">
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl shadow-black/50 space-y-5 text-center w-full max-w-md">
         {/* Result headline */}
         {isTimeout ? (
           <div className="space-y-1">
@@ -95,13 +104,59 @@ export function ResultOverlay({
           </div>
         </div>
 
-        <Link
-          href="/"
-          className="inline-block px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-xl transition-colors"
-        >
-          Play Again
-        </Link>
+        {feedbackState === "idle" && (
+          <div className="space-y-3">
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="What gave the AI away? Any tips?"
+              rows={2}
+              className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-[#ededed] placeholder-[#666] focus:outline-none focus:border-emerald-500 resize-none"
+            />
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={async () => {
+                  if (!feedback.trim()) return;
+                  setFeedbackState("sending");
+                  try {
+                    await fetch("/api/game-feedback", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ gameId, feedback: feedback.trim() }),
+                    });
+                  } catch { /* best-effort */ }
+                  setFeedbackState("sent");
+                }}
+                disabled={!feedback.trim() || feedbackState === "sending"}
+                className="px-6 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-[#2a2a2a] disabled:text-[#555] text-white text-sm font-medium rounded-xl transition-colors cursor-pointer disabled:cursor-default"
+              >
+                {feedbackState === "sending" ? "Sending..." : "Send Feedback"}
+              </button>
+              <button
+                onClick={() => setFeedbackState("skipped")}
+                className="text-sm text-[#666] hover:text-[#999] transition-colors cursor-pointer"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(feedbackState === "sent" || feedbackState === "skipped") && (
+          <div className="space-y-3">
+            {feedbackState === "sent" && (
+              <p className="text-emerald-400 text-sm">Thanks for the feedback!</p>
+            )}
+            <Link
+              href="/"
+              className="inline-block px-8 py-3 min-h-[44px] bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              Play Again
+            </Link>
+          </div>
+        )}
       </div>
     </div>
+    </>
   );
 }

@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { getGame, getMessages, insertMessage, updateGame } from "@/lib/game";
+import {
+  getGame,
+  getMessages,
+  getLessons,
+  insertMessage,
+  updateGame,
+} from "@/lib/game";
 import {
   buildSystemPrompt,
   buildConversationHistory,
@@ -48,9 +54,19 @@ export async function POST(req: Request) {
   }
 
   // Build system prompt and conversation history
-  const systemPrompt = buildSystemPrompt(persona as Record<string, unknown>);
+  const lessons = await getLessons();
+  const systemPrompt = buildSystemPrompt(persona as Record<string, unknown>, lessons);
   const history = await getMessages(gameId, game.claude_slot);
   const conversationMessages = buildConversationHistory(history);
+
+  // Guard: if history already ends with an assistant message, a concurrent
+  // request already handled this turn — skip to avoid the Anthropic prefill error.
+  if (
+    conversationMessages.length > 0 &&
+    conversationMessages[conversationMessages.length - 1].role === "assistant"
+  ) {
+    return NextResponse.json({ ok: true });
+  }
 
   // Stream Claude's response
   const result = streamText({

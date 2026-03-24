@@ -20,6 +20,10 @@ export function GameClient({ gameId }: { gameId: string }) {
   const [streamingContent, setStreamingContent] = useState("");
   const streamingSlotRef = useRef<Slot | null>(null);
 
+  // Tracks slots with an in-flight request (send → stream complete)
+  // Prevents sending a second message before Claude finishes processing the first
+  const [pendingSlots, setPendingSlots] = useState<Set<Slot>>(new Set());
+
   // Guess state
   const [guessLeft, setGuessLeft] = useState<Guess | null>(null);
   const [guessRight, setGuessRight] = useState<Guess | null>(null);
@@ -37,6 +41,12 @@ export function GameClient({ gameId }: { gameId: string }) {
     guessLeft: Guess | null;
     guessRight: Guess | null;
   } | null>(null);
+
+  // Mobile tab switcher
+  const [activeTab, setActiveTab] = useState<Slot>("left");
+  const [unreadLeft, setUnreadLeft] = useState(false);
+  const [unreadRight, setUnreadRight] = useState(false);
+  const activeTabRef = useRef<Slot>("left");
 
   // UI
   const [copied, setCopied] = useState(false);
@@ -127,6 +137,11 @@ export function GameClient({ gameId }: { gameId: string }) {
             setStreamingContent("");
           }
 
+          if (newMsg.sender !== "p1" && newMsg.slot !== activeTabRef.current) {
+            if (newMsg.slot === "left") setUnreadLeft(true);
+            if (newMsg.slot === "right") setUnreadRight(true);
+          }
+
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             const filtered = prev.filter(
@@ -173,6 +188,8 @@ export function GameClient({ gameId }: { gameId: string }) {
 
   const sendMessage = useCallback(
     async (slot: Slot, content: string) => {
+      setPendingSlots((prev) => new Set(prev).add(slot));
+
       const pendingMsg: Message = {
         id: `pending-${Date.now()}-${slot}`,
         game_id: gameId,
@@ -183,34 +200,42 @@ export function GameClient({ gameId }: { gameId: string }) {
       };
       setMessages((prev) => [...prev, pendingMsg]);
 
-      const res = await fetch("/api/claude-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameId, slot, content }),
-      });
+      try {
+        const res = await fetch("/api/claude-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameId, slot, content }),
+        });
 
-      if (!res.ok) return;
+        if (!res.ok) return;
 
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("text/plain") && res.body) {
-        streamingSlotRef.current = slot;
-        setStreamingSlot(slot);
-        setStreamingContent("");
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("text/plain") && res.body) {
+          streamingSlotRef.current = slot;
+          setStreamingSlot(slot);
+          setStreamingContent("");
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (streamingSlotRef.current !== slot) break;
-            const chunk = decoder.decode(value, { stream: true });
-            setStreamingContent((prev) => prev + chunk);
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (streamingSlotRef.current !== slot) break;
+              const chunk = decoder.decode(value, { stream: true });
+              setStreamingContent((prev) => prev + chunk);
+            }
+          } finally {
+            reader.releaseLock();
           }
-        } finally {
-          reader.releaseLock();
         }
+      } finally {
+        setPendingSlots((prev) => {
+          const next = new Set(prev);
+          next.delete(slot);
+          return next;
+        });
       }
     },
     [gameId]
@@ -280,6 +305,13 @@ export function GameClient({ gameId }: { gameId: string }) {
     setGuessLeft(value === "human" ? "ai" : "human");
   }, []);
 
+  const switchTab = useCallback((tab: Slot) => {
+    setActiveTab(tab);
+    activeTabRef.current = tab;
+    if (tab === "left") setUnreadLeft(false);
+    if (tab === "right") setUnreadRight(false);
+  }, []);
+
   // ── Derived state ─────────────────────────────────────────────
 
   const leftMessages = messages.filter((m) => m.slot === "left");
@@ -331,7 +363,7 @@ export function GameClient({ gameId }: { gameId: string }) {
           </div>
 
           <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-4 flex items-center gap-3">
-            <code className="flex-1 text-sm text-emerald-400 truncate">
+            <code className="flex-1 text-xs sm:text-sm text-emerald-400 truncate break-all">
               {inviteUrl}
             </code>
             <button
@@ -356,12 +388,12 @@ export function GameClient({ gameId }: { gameId: string }) {
 
   // ── Active / Guessing / Ended — Dual Chat Panels ──────────────
   return (
-    <main className="h-screen flex flex-col">
+    <main className="h-[var(--app-height)] flex flex-col">
       {/* ── Header with timer ── */}
-      <header className="shrink-0 px-6 py-3 border-b border-[#2a2a2a] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold">Turing Game</h1>
-          <span className="text-xs text-[#555] bg-[#1e1e1e] px-2 py-0.5 rounded">Interrogator</span>
+      <header className="shrink-0 px-4 sm:px-6 py-2 sm:py-3 border-b border-[#2a2a2a] flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <h1 className="text-base sm:text-lg font-semibold">Turing Game</h1>
+          <span className="hidden sm:inline text-xs text-[#555] bg-[#1e1e1e] px-2 py-0.5 rounded">Interrogator</span>
         </div>
 
         {isActive && startedAt && (
@@ -385,7 +417,7 @@ export function GameClient({ gameId }: { gameId: string }) {
           <span className="text-sm text-[#555] font-mono">Game Over</span>
         )}
 
-        <span className="text-sm text-[#555] font-mono">{gameId}</span>
+        <span className="hidden sm:inline text-sm text-[#555] font-mono">{gameId}</span>
       </header>
 
       {/* ── Status banner ── */}
@@ -397,9 +429,39 @@ export function GameClient({ gameId }: { gameId: string }) {
         </div>
       )}
 
-      {/* ── Chat panels ── */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 min-h-0 overflow-y-auto lg:overflow-hidden">
-        <div className="flex-1 flex flex-col min-w-0 min-h-[300px] lg:min-h-0">
+      {/* ── Mobile tab bar (below lg) ── */}
+      <div className="shrink-0 lg:hidden flex border-b border-[#2a2a2a]">
+        <button
+          onClick={() => switchTab("left")}
+          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors relative cursor-pointer ${
+            activeTab === "left"
+              ? "text-emerald-400 border-b-2 border-emerald-400"
+              : "text-[#888] hover:text-[#ccc]"
+          }`}
+        >
+          Witness A
+          {unreadLeft && activeTab !== "left" && (
+            <span className="absolute top-2 ml-1 inline-block w-2 h-2 rounded-full bg-emerald-400" />
+          )}
+        </button>
+        <button
+          onClick={() => switchTab("right")}
+          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors relative cursor-pointer ${
+            activeTab === "right"
+              ? "text-emerald-400 border-b-2 border-emerald-400"
+              : "text-[#888] hover:text-[#ccc]"
+          }`}
+        >
+          Witness B
+          {unreadRight && activeTab !== "right" && (
+            <span className="absolute top-2 ml-1 inline-block w-2 h-2 rounded-full bg-emerald-400" />
+          )}
+        </button>
+      </div>
+
+      {/* ── Chat panels — mobile: single tab, desktop: side-by-side ── */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 min-h-0 lg:overflow-hidden">
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${activeTab !== "left" ? "hidden lg:flex" : ""}`}>
           <ChatPanel
             messages={leftMessages}
             streamingContent={
@@ -408,7 +470,7 @@ export function GameClient({ gameId }: { gameId: string }) {
             onSend={(content) => sendMessage("left", content)}
             label="Witness A"
             currentSender="p1"
-            disabled={chatDisabled || streamingSlot === "left"}
+            disabled={chatDisabled || streamingSlot === "left" || pendingSlots.has("left")}
             emptyHint="Say something to Witness A..."
           />
           <GuessDropdown
@@ -417,7 +479,7 @@ export function GameClient({ gameId }: { gameId: string }) {
             disabled={isEnded || submittingGuess}
           />
         </div>
-        <div className="flex-1 flex flex-col min-w-0 min-h-[300px] lg:min-h-0">
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${activeTab !== "right" ? "hidden lg:flex" : ""}`}>
           <ChatPanel
             messages={rightMessages}
             streamingContent={
@@ -426,7 +488,7 @@ export function GameClient({ gameId }: { gameId: string }) {
             onSend={(content) => sendMessage("right", content)}
             label="Witness B"
             currentSender="p1"
-            disabled={chatDisabled || streamingSlot === "right"}
+            disabled={chatDisabled || streamingSlot === "right" || pendingSlots.has("right")}
             emptyHint="Say something to Witness B..."
           />
           <GuessDropdown
@@ -439,7 +501,7 @@ export function GameClient({ gameId }: { gameId: string }) {
 
       {/* ── Submit Guess button ── */}
       {!isEnded && (
-        <div className="shrink-0 px-6 pb-4 flex justify-center">
+        <div className="shrink-0 px-4 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] flex justify-center">
           <button
             onClick={handleSubmitGuess}
             disabled={!canSubmitGuess}
@@ -453,6 +515,7 @@ export function GameClient({ gameId }: { gameId: string }) {
       {/* ── Result overlay ── */}
       {isEnded && gameResult && (
         <ResultOverlay
+          gameId={gameId}
           claudeSlot={gameResult.claudeSlot}
           guessCorrect={gameResult.guessCorrect}
           guessLeft={gameResult.guessLeft}

@@ -87,7 +87,7 @@ export function ChatPanel({
 
       <form
         onSubmit={handleSubmit}
-        className="p-3 border-t border-[#2a2a2a] flex gap-2"
+        className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[#2a2a2a] flex gap-2"
       >
         <input
           type="text"
@@ -95,12 +95,14 @@ export function ChatPanel({
           onChange={(e) => setInput(e.target.value)}
           disabled={disabled}
           placeholder={disabled ? "Chat disabled" : "Type a message..."}
-          className="flex-1 bg-[#1e1e1e] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ededed] placeholder-[#666] focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+          enterKeyHint="send"
+          autoComplete="off"
+          className="flex-1 bg-[#1e1e1e] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-[#ededed] placeholder-[#666] focus:outline-none focus:border-emerald-500 disabled:opacity-50 min-h-[44px]"
         />
         <button
           type="submit"
           disabled={disabled || !input.trim()}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-[#333] disabled:text-[#666] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer disabled:cursor-default"
+          className="px-4 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-[#333] disabled:text-[#666] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer disabled:cursor-default"
         >
           Send
         </button>

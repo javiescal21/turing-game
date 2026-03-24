@@ -32,6 +32,15 @@ export interface Message {
   created_at: string;
 }
 
+export interface Lesson {
+  id: string;
+  game_id: string | null;
+  content: string;
+  weight: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Query helpers (server-side only) ─────────────────────────
 
 export async function getGame(gameId: string): Promise<Game | null> {
@@ -94,4 +103,67 @@ export async function updateGame(
 
   if (error || !data) return null;
   return data as Game;
+}
+
+// ── Lesson helpers (server-side only) ─────────────────────────
+
+const MAX_LESSONS = 15;
+
+export async function getLessons(): Promise<Lesson[]> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("*")
+    .order("weight", { ascending: false });
+
+  if (error || !data) return [];
+  return data as Lesson[];
+}
+
+export async function upsertLessons(
+  lessons: {
+    id?: string;
+    game_id: string | null;
+    content: string;
+    weight: number;
+  }[]
+): Promise<void> {
+  if (lessons.length === 0) return;
+  const supabase = createServerSupabaseClient();
+  const now = new Date().toISOString();
+
+  const toInsert = lessons.filter((l) => !l.id);
+  const toUpdate = lessons.filter((l) => l.id);
+
+  if (toInsert.length > 0) {
+    await supabase.from("lessons").insert(
+      toInsert.map((l) => ({
+        game_id: l.game_id,
+        content: l.content,
+        weight: l.weight,
+        updated_at: now,
+      }))
+    );
+  }
+
+  for (const l of toUpdate) {
+    await supabase
+      .from("lessons")
+      .update({ weight: l.weight, updated_at: now })
+      .eq("id", l.id!);
+  }
+}
+
+export async function evictExcessLessons(): Promise<void> {
+  const supabase = createServerSupabaseClient();
+  const { data } = await supabase
+    .from("lessons")
+    .select("id, weight")
+    .order("weight", { ascending: true });
+
+  if (!data || data.length <= MAX_LESSONS) return;
+
+  const toDelete = data.slice(0, data.length - MAX_LESSONS);
+  const ids = toDelete.map((l) => l.id);
+  await supabase.from("lessons").delete().in("id", ids);
 }

@@ -242,9 +242,9 @@ export function JoinClient({
   const isChatDisabled = phase === "guessing";
 
   return (
-    <main className="h-screen flex flex-col">
-      <header className="shrink-0 px-6 py-3 border-b border-[#2a2a2a] flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Turing Game</h1>
+    <main className="h-[var(--app-height)] flex flex-col">
+      <header className="shrink-0 px-4 sm:px-6 py-2 sm:py-3 border-b border-[#2a2a2a] flex items-center justify-between gap-2">
+        <h1 className="text-base sm:text-lg font-semibold">Turing Game</h1>
         {startedAt && phase === "chat" && (
           <CountdownTimer
             startedAt={startedAt}
