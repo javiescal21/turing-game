@@ -134,7 +134,17 @@ export function ResultOverlay({
                 {feedbackState === "sending" ? "Sending..." : "Send Feedback"}
               </button>
               <button
-                onClick={() => setFeedbackState("skipped")}
+                onClick={async () => {
+                  setFeedbackState("sending");
+                  try {
+                    await fetch("/api/game-feedback", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ gameId, skip: true }),
+                    });
+                  } catch { /* best-effort */ }
+                  setFeedbackState("skipped");
+                }}
                 disabled={feedbackState === "sending"}
                 className="text-sm text-[#666] hover:text-[#999] transition-colors cursor-pointer disabled:opacity-50"
               >

@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { getGame, insertMessage } from "@/lib/game";
+import { analyzeGame } from "@/lib/claude";
 
 export async function POST(req: Request) {
-  const { gameId, feedback } = (await req.json()) as {
+  const { gameId, feedback, skip } = (await req.json()) as {
     gameId: string;
-    feedback: string;
+    feedback?: string;
+    skip?: boolean;
   };
 
-  if (!gameId || !feedback?.trim()) {
+  if (!gameId) {
     return NextResponse.json(
-      { error: "gameId and feedback are required" },
+      { error: "gameId is required" },
       { status: 400 }
     );
   }
@@ -26,12 +28,19 @@ export async function POST(req: Request) {
     );
   }
 
-  await insertMessage({
-    game_id: gameId,
-    sender: "p1",
-    slot: null,
-    content: `[FEEDBACK] ${feedback.trim()}`,
-  });
+  if (!skip && feedback?.trim()) {
+    await insertMessage({
+      game_id: gameId,
+      sender: "p1",
+      slot: null,
+      content: `[FEEDBACK] ${feedback.trim()}`,
+    });
+  }
+
+  // Fire-and-forget: compound lessons after feedback is saved (or skipped)
+  analyzeGame(gameId).catch((e) =>
+    console.error("[game-feedback] lesson analysis failed:", e)
+  );
 
   return NextResponse.json({ ok: true });
 }

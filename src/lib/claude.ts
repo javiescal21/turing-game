@@ -119,13 +119,21 @@ export async function analyzeGame(gameId: string): Promise<void> {
   const claudeSlotLabel = game.claude_slot === "left" ? "A" : "B";
   const humanSlotLabel = game.claude_slot === "left" ? "B" : "A";
 
-  const claudeConvo = allMessages
+  // Filter to only in-game messages (before game ended). The last Claude
+  // message in its slot is the post-game reflection and must be excluded --
+  // it is NOT part of the game conversation the interrogator saw.
+  const endedAt = game.ended_at ? new Date(game.ended_at).getTime() : Infinity;
+  const gameMessages = allMessages.filter(
+    (m) => m.slot !== null && new Date(m.created_at).getTime() <= endedAt
+  );
+
+  const claudeConvo = gameMessages
     .filter((m) => m.slot === game.claude_slot)
     .map((m) => `[${m.sender === "p1" ? "Interrogator" : "Claude"}]: ${m.content}`)
     .join("\n");
 
-  const humanConvo = allMessages
-    .filter((m) => m.slot !== game.claude_slot && m.slot !== null)
+  const humanConvo = gameMessages
+    .filter((m) => m.slot !== game.claude_slot)
     .map((m) => `[${m.sender === "p1" ? "Interrogator" : "Human"}]: ${m.content}`)
     .join("\n");
 
@@ -156,13 +164,15 @@ export async function analyzeGame(gameId: string): Promise<void> {
 
   const { text } = await generateText({
     model: anthropic("claude-sonnet-4-6"),
-    system: `You are a post-game analyst for a Turing test game. Your job is to extract actionable lessons that help the AI perform more convincingly as a human in future games, and to re-evaluate the importance of existing lessons based on new evidence.`,
+    system: `You are a post-game analyst for a Turing test game. Your job is to extract actionable lessons that help the AI perform more convincingly as a human in future games, and to re-evaluate the importance of existing lessons based on new evidence.
+
+CRITICAL CONTEXT: The conversations below contain ONLY messages exchanged DURING the active game, before the timer expired. Any post-game reflection or reveal messages have been excluded. Do NOT flag any message in these transcripts as "breaking character" or "confessing" — everything shown here happened while the game was live and the AI was supposed to be in character.`,
     prompt: `GAME RESULT: The AI was Witness ${claudeSlotLabel}. Result: ${resultLabel}.
 
-CLAUDE'S CONVERSATION (Witness ${claudeSlotLabel}):
+CLAUDE'S CONVERSATION (Witness ${claudeSlotLabel}) — only in-game messages:
 ${claudeConvo || "(no messages)"}
 
-HUMAN WITNESS CONVERSATION (Witness ${humanSlotLabel}, for comparison):
+HUMAN WITNESS CONVERSATION (Witness ${humanSlotLabel}, for comparison) — only in-game messages:
 ${humanConvo || "(no messages)"}
 
 INTERROGATOR FEEDBACK:
@@ -175,8 +185,9 @@ INSTRUCTIONS:
 1. Compare Claude's behavior to the human witness. Note differences in tone, length, timing, word choice.
 2. If the interrogator provided feedback, weigh it heavily — they know what gave the AI away.
 3. Produce 0-2 NEW lessons ONLY if there is a clear, actionable mistake or opportunity. Each lesson must be a single imperative sentence. If Claude performed well and there is nothing to learn, return zero new lessons.
-4. Re-evaluate the weight (1-10) of ALL existing lessons based on whether this game reinforces or contradicts them. Lessons repeatedly validated should increase. Lessons about problems Claude no longer exhibits should decrease.
-5. Respond with ONLY a JSON object, no markdown fences, no other text:
+4. CRITICAL: Before adding a new lesson, check ALL existing lessons for semantic duplicates. If an existing lesson already covers the same idea (even with different wording), do NOT add a new one — instead, adjust the existing lesson's weight. Never have two lessons that say essentially the same thing.
+5. Re-evaluate the weight (1-10) of ALL existing lessons based on whether this game reinforces or contradicts them. Lessons repeatedly validated should increase. Lessons about problems Claude no longer exhibits should decrease toward 1.
+6. Respond with ONLY a JSON object, no markdown fences, no other text:
 
 {"new_lessons":[{"content":"imperative lesson","weight":1-10}],"updated_weights":{"existing-lesson-uuid":new_weight}}`,
   });

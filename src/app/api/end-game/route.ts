@@ -8,7 +8,6 @@ import {
 import {
   buildConversationHistory,
   generateReflection,
-  analyzeGame,
 } from "@/lib/claude";
 import type { Guess } from "@/lib/game";
 
@@ -83,11 +82,6 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("[end-game] reflection generation failed:", e);
   }
-
-  // Fire-and-forget: compound lessons from this game
-  analyzeGame(gameId).catch((e) =>
-    console.error("[end-game] lesson analysis failed:", e)
-  );
 
   return NextResponse.json({
     guessCorrect,
