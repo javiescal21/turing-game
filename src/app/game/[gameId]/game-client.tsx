@@ -294,15 +294,12 @@ export function GameClient({ gameId }: { gameId: string }) {
     setTimeout(() => setCopied(false), 2000);
   }, [gameId]);
 
-  // ── Auto-select opposite guess (only 2 options) ────────────
   const handleGuessLeftChange = useCallback((value: Guess) => {
     setGuessLeft(value);
-    setGuessRight(value === "human" ? "ai" : "human");
   }, []);
 
   const handleGuessRightChange = useCallback((value: Guess) => {
     setGuessRight(value);
-    setGuessLeft(value === "human" ? "ai" : "human");
   }, []);
 
   const switchTab = useCallback((tab: Slot) => {
@@ -358,7 +355,7 @@ export function GameClient({ gameId }: { gameId: string }) {
               Waiting for opponent&hellip;
             </h1>
             <p className="text-[#888]">
-              Share this link with a friend to start the game
+              Share this link to start the game
             </p>
           </div>
 

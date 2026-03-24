@@ -28,8 +28,8 @@ export default function HomePage() {
         <div className="space-y-3">
           <h1 className="text-4xl font-bold tracking-tight">Turing Game</h1>
           <p className="text-[#888] text-lg leading-relaxed">
-            Chat with two witnesses &mdash; one human, one AI. Can you tell
-            which is which?
+            Chat with two witnesses. Can you figure out who &mdash; or
+            what &mdash; you&apos;re talking to?
           </p>
         </div>
 

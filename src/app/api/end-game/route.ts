@@ -47,12 +47,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Correct if P1 identified the Claude slot as AI and the other as human
-    if (game.claude_slot === "left") {
-      guessCorrect = guessLeft === "ai" && guessRight === "human";
-    } else {
-      guessCorrect = guessRight === "ai" && guessLeft === "human";
-    }
+    const leftIsAi = game.claude_slot === "left";
+    const rightIsAi = game.claude_slot === "right";
+    const leftCorrect = guessLeft === (leftIsAi ? "ai" : "human");
+    const rightCorrect = guessRight === (rightIsAi ? "ai" : "human");
+    guessCorrect = leftCorrect && rightCorrect;
   }
 
   // Update game row

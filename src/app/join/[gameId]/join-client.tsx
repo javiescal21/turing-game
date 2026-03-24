@@ -179,9 +179,9 @@ export function JoinClient({
           </div>
 
           <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-4 text-sm text-[#888] leading-relaxed">
-            <span className="text-amber-400 font-medium">Heads up:</span> One
-            of the witnesses in this game is an AI. The interrogator
-            doesn&apos;t know which one is you. Just be yourself.
+            <span className="text-amber-400 font-medium">Heads up:</span> The
+            interrogator doesn&apos;t know who&apos;s on the other side.
+            Just be yourself.
           </div>
 
           <div className="space-y-3">
