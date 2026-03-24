@@ -104,14 +104,15 @@ export function ResultOverlay({
           </div>
         </div>
 
-        {feedbackState === "idle" && (
+        {(feedbackState === "idle" || feedbackState === "sending") && (
           <div className="space-y-3">
             <textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="What gave the AI away? Any tips?"
               rows={2}
-              className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-[#ededed] placeholder-[#666] focus:outline-none focus:border-emerald-500 resize-none"
+              disabled={feedbackState === "sending"}
+              className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-[#ededed] placeholder-[#666] focus:outline-none focus:border-emerald-500 resize-none disabled:opacity-50"
             />
             <div className="flex items-center justify-center gap-4">
               <button
@@ -134,7 +135,8 @@ export function ResultOverlay({
               </button>
               <button
                 onClick={() => setFeedbackState("skipped")}
-                className="text-sm text-[#666] hover:text-[#999] transition-colors cursor-pointer"
+                disabled={feedbackState === "sending"}
+                className="text-sm text-[#666] hover:text-[#999] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Skip
               </button>
